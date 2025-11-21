@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+            width: 250px;
+            transition: width 0.3s ease;
+            position: relative;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: bold;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.collapsed .sidebar-title {
+            opacity: 0;
+            display: none;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: #60a5fa;
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-left-color: #60a5fa;
+        }
+
+        .menu-icon {
+            font-size: 24px;
+            min-width: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-text {
+            margin-left: 15px;
+            white-space: nowrap;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            display: none;
+        }
+
+        .menu-description {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-left: 15px;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .menu-description {
+            display: none;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #16213e;
+        }
+
+        .top-bar {
+            background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .current-service {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .service-status {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .content-frame {
+            flex: 1;
+            position: relative;
+            background-color: #0f172a;
+        }
+
+        .service-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: white;
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .welcome-screen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-screen p {
+            font-size: 18px;
+            color: #94a3b8;
+            max-width: 600px;
+        }
+
+        .error-message {
+            background: #dc2626;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">SOC Dashboard</span>
+                <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+            </div>
+            <div class="sidebar-menu">
+                {% for key, service in services.items() %}
+                <div class="menu-item" onclick="loadService('{{ key }}', '{{ service.url }}', '{{ service.name }}')">
+                    <span class="menu-icon">{{ service.icon }}</span>
+                    <div>
+                        <div class="menu-text">{{ service.name }}</div>
+                        <div class="menu-description">{{ service.description }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-bar">
+                <div class="current-service" id="currentService">SOC Dashboard</div>
+                <div class="service-status">
+                    <span class="status-indicator"></span>
+                    <span>System Online</span>
+                </div>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="content-frame" id="contentFrame">
+                <div class="welcome-screen">
+                    <h1>🛡️ Security Operations Center</h1>
+                    <p>Welcome to your SOC Dashboard. Select a service from the left panel to begin monitoring your security infrastructure.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        function loadService(serviceKey, serviceUrl, serviceName) {
+            const contentFrame = document.getElementById('contentFrame');
+            const currentService = document.getElementById('currentService');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Update active menu item
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Update top bar
+            currentService.textContent = serviceName;
+            
+            // Hide error message
+            errorMessage.style.display = 'none';
+            
+            // Create iframe
+            contentFrame.innerHTML = `
+                <iframe 
+                    class="service-iframe" 
+                    src="${serviceUrl}"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+                    onload="handleIframeLoad()"
+                    onerror="handleIframeError('${serviceName}')">
+                </iframe>
+            `;
+        }
+
+        function handleIframeLoad() {
+            console.log('Service loaded successfully');
+        }
+
+        function handleIframeError(serviceName) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = `Unable to load ${serviceName}. Please check if the service is running.`;
+            errorMessage.style.display = 'block';
+        }
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                toggleSidebar();
+            }
+        });
+    </script>
+</body>
+</html>

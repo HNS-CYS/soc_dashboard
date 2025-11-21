@@ -4,11 +4,11 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Service configurations - NOW USING NGINX PROXY PATHS
+# Service configurations - Updated URLs to match actual service paths
 SERVICES = {
     'wazuh': {
         'name': 'Wazuh',
-        'url': '/wazuh/',
+        'url': '/app/login',  # Wazuh redirects here
         'description': 'Security Monitoring',
         'icon': '🛡️'
     },
@@ -42,7 +42,7 @@ def get_services():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'healthy'})
+    return jsonify({'status': 'healthy', 'services': list(SERVICES.keys())})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

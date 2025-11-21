@@ -14,7 +14,7 @@ services:
     expose:
       - "5000"
     networks:
-      - soc-network
+      - socnet
 
   nginx:
     image: nginx:alpine
@@ -29,8 +29,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - soc-network
+      - socnet
 
 networks:
-  soc-network:
+  socnet:
     driver: bridge
